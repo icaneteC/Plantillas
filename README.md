@@ -1,6 +1,6 @@
 # isma
 
-Herramientas clínicas del Dr. Ismael Cañete Campos.
+Herramientas clínicas para traumatología infantil.
 
 ## plantillas.html
 
@@ -17,7 +17,7 @@ No se guarda ni se envía ningún dato del paciente: todo ocurre en el navegador
 
 ### Configuración
 
-- Datos del médico: objeto `DOCTOR` al inicio del script en `plantillas.html`.
-- Lugares de atención: arreglo `SEDES` (nombre impreso y logo en `logos/`). La elección se recuerda en el navegador.
+- **Médico tratante:** cada usuario ingresa su nombre, RUT y especialidad en el formulario. Se guardan solo en su navegador (no se envían a ninguna parte) y se recuerdan para la próxima vez.
+- **Lugar de atención:** UC CHRISTUS, Hospital Sótero del Río u "Otro lugar", donde se escribe el nombre de la institución y opcionalmente se sube un logo. La elección también se recuerda en el navegador.
 - Firma: a mano sobre la línea, después de imprimir.
-- Elementos: arreglo `ELEMENTS` en el mismo archivo.
+- Elementos de la plantilla: arreglo `ELEMENTS` en `plantillas.html`.

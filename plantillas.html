@@ -56,6 +56,7 @@
   .seg.wide button { padding: 8px 6px; }
   .seg.wide button:nth-child(3) { border-left: 0; }
   .seg.wide button:nth-child(n+3) { border-top: 1px solid var(--line); }
+  #sedeSeg button:nth-child(3):last-child { grid-column: 1 / -1; }
 
   .set-block { border: 1px solid var(--line); border-radius: var(--radius); margin-top: 12px; overflow: hidden; }
   .set-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--brand-soft); padding: 8px 12px; }
@@ -75,6 +76,18 @@
   .el-extra .note { font-size: 12px; color: var(--muted); }
   .el-row.on .el-name { color: var(--brand); font-weight: 600; }
   .el-row.missing input[type=number] { border-color: var(--warn); }
+  details.doc > summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  details.doc > summary::-webkit-details-marker { display: none; }
+  details.doc > summary .who { font-size: 13px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  details.doc > summary .who.empty { color: var(--warn); }
+  details.doc > summary .edit { font-size: 12px; color: var(--accent); text-decoration: underline; flex: none; }
+  details.doc[open] > summary .edit { display: none; }
+  .saved-note { font-size: 11.5px; color: var(--muted); margin-top: 8px; }
+  #otraSede { margin-top: 10px; }
+  #otraSede[hidden] { display: none; }
+  .logo-row { display: flex; align-items: center; gap: 10px; margin-top: 4px; flex-wrap: wrap; }
+  .logo-row img { height: 34px; max-width: 140px; object-fit: contain; border: 1px solid var(--line); border-radius: 4px; padding: 2px; background: #fff; }
+  .logo-row img:not([src]), .logo-row img[src=""] { display: none; }
   .linkbtn { font: inherit; font-size: 12px; border: 0; background: none; color: var(--accent); cursor: pointer; padding: 0; text-decoration: underline; }
 
   .toolbar { display: flex; gap: 10px; align-items: center; justify-content: flex-end; margin-bottom: 14px; flex-wrap: wrap; }
@@ -167,8 +180,39 @@
     </div>
 
     <fieldset>
+      <legend>Médico tratante</legend>
+      <details class="doc" id="docBox">
+        <summary><span class="who" id="docWho"></span><span class="edit">Editar</span></summary>
+        <label class="f" for="docNombre">Nombre como aparecerá impreso</label>
+        <input type="text" id="docNombre" autocomplete="off" placeholder="ej. Dra. María Pérez Soto">
+        <div class="row2">
+          <div>
+            <label class="f" for="docRut">RUT</label>
+            <input type="text" id="docRut" autocomplete="off" placeholder="12.345.678-9">
+            <div class="hint" id="docRutHint"></div>
+          </div>
+          <div>
+            <label class="f" for="docSpec">Especialidad</label>
+            <input type="text" id="docSpec" autocomplete="off" placeholder="ej. Traumatología Infantil">
+          </div>
+        </div>
+        <div class="saved-note">Se guarda solo en este navegador; no se envía a ninguna parte.</div>
+      </details>
+    </fieldset>
+
+    <fieldset>
       <legend>Lugar de atención</legend>
       <div class="seg wide" id="sedeSeg"></div>
+      <div id="otraSede" hidden>
+        <label class="f" for="otraNombre">Nombre de la institución</label>
+        <input type="text" id="otraNombre" autocomplete="off" placeholder="ej. Clínica Las Condes">
+        <label class="f" for="otraLogo">Logo (opcional)</label>
+        <div class="logo-row">
+          <img id="otraLogoPrev" alt="">
+          <input type="file" id="otraLogo" accept="image/*">
+          <button type="button" class="linkbtn" id="otraLogoDel" hidden>Quitar logo</button>
+        </div>
+      </div>
     </fieldset>
 
     <fieldset>
@@ -269,22 +313,24 @@
 </div>
 
 <script>
-/* ===================== Configuración del médico =====================
-   Editar aquí para cambiar los datos impresos en cada indicación.
-   La firma se realiza a mano sobre la línea, después de imprimir. */
-const DOCTOR = {
-  nombre: 'Dr. Ismael Cañete Campos',
-  rut: '16.360.878-2',
-  especialidad: 'Ortopedia y Traumatología Infantil'
+/* ===================== Médico y lugar de atención =====================
+   Cada usuario ingresa sus datos en el formulario; se guardan solo en su
+   navegador (localStorage). La firma se realiza a mano después de imprimir. */
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('plantillas.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('plantillas.' + k, JSON.stringify(v)); return true; } catch (e) { return false; } }
 };
+const DOCTOR = Object.assign({ nombre: '', rut: '', especialidad: '' }, store.get('medico', {}));
+const OTRA = Object.assign({ nombre: '', logo: '' }, store.get('otraSede', {}));
+
 // Lugares de atención: el seleccionado define el logo y la institución impresa.
 const SEDES = [
-  { id: 'uc',     corto: 'UC CHRISTUS',          nombre: 'Red de Salud UC CHRISTUS',    logo: 'logos/uc-christus.png' },
-  { id: 'sotero', corto: 'Hospital Sótero del Río', nombre: 'Hospital Dr. Sótero del Río', logo: 'logos/sotero.png' }
+  { id: 'uc',     corto: 'UC CHRISTUS',             nombre: 'Red de Salud UC CHRISTUS',    logo: 'logos/uc-christus.png' },
+  { id: 'sotero', corto: 'Hospital Sótero del Río', nombre: 'Hospital Dr. Sótero del Río', logo: 'logos/sotero.png' },
+  { id: 'otro',   corto: 'Otro lugar',              get nombre() { return OTRA.nombre; }, get logo() { return OTRA.logo; } }
 ];
-SEDES.forEach(s => { const i = new Image(); i.src = s.logo; });   // precarga
-let sede = SEDES[0];
-try { const g = localStorage.getItem('isma.sede'); sede = SEDES.find(s => s.id === g) || SEDES[0]; } catch (e) {}
+SEDES.forEach(s => { if (s.logo) { const i = new Image(); i.src = s.logo; } });   // precarga
+let sede = SEDES.find(s => s.id === store.get('sede')) || SEDES[0];
 
 /* ===================== Elementos de la plantilla ===================== */
 const ELEMENTS = [
@@ -517,15 +563,22 @@ function renderDoctor() {
   $('pDocName').textContent = DOCTOR.nombre;
   $('pDocSpec').textContent = DOCTOR.especialidad;
   $('pSigName').textContent = DOCTOR.nombre;
-  $('pSigRut').textContent = 'RUT ' + DOCTOR.rut;
+  $('pSigRut').textContent = DOCTOR.rut ? 'RUT ' + DOCTOR.rut : '';
   $('pSigSpec').textContent = DOCTOR.especialidad;
   $('pSigInst').textContent = sede.nombre;
-  $('pLogo').src = sede.logo;
+  if (sede.logo) { $('pLogo').src = sede.logo; $('pLogo').style.display = ''; }
+  else { $('pLogo').removeAttribute('src'); $('pLogo').style.display = 'none'; }
   $('pLogo').alt = sede.nombre;
   $('sedeSeg').innerHTML = SEDES.map(s =>
-    `<button type="button" data-sede="${s.id}" class="${s.id === sede.id ? 'act' : ''}">${s.corto}</button>`).join('');
+    `<button type="button" data-sede="${s.id}" class="${s.id === sede.id ? 'act' : ''}">${esc(s.corto)}</button>`).join('');
   $('sedeNow').textContent = sede.nombre;
   document.documentElement.dataset.sede = sede.id;
+  $('otraSede').hidden = sede.id !== 'otro';
+  $('otraLogoPrev').src = OTRA.logo || '';
+  $('otraLogoDel').hidden = !OTRA.logo;
+  const who = $('docWho');
+  who.textContent = DOCTOR.nombre || 'Ingrese sus datos';
+  who.classList.toggle('empty', !DOCTOR.nombre);
 }
 
 /* ===================== Escala de la página en pantalla ===================== */
@@ -592,6 +645,8 @@ $('rut').addEventListener('blur', () => { const v = $('rut').value; if (rutClean
 
 function pendingIssues() {
   const issues = [];
+  if (!DOCTOR.nombre) issues.push('Faltan los datos del médico tratante.');
+  if (!sede.nombre) issues.push('Falta el nombre del lugar de atención.');
   if (!$('nombre').value.trim()) issues.push('Falta el nombre del paciente.');
   if (!$('rut').value.trim()) issues.push('Falta el RUT del paciente.');
   else if (rutValid($('rut').value) === false) issues.push('El RUT del paciente no es válido.');
@@ -627,14 +682,63 @@ $('btnClear').addEventListener('click', () => {
 $('sedeSeg').addEventListener('click', ev => {
   const b = ev.target.closest('[data-sede]'); if (!b) return;
   sede = SEDES.find(s => s.id === b.dataset.sede) || SEDES[0];
-  try { localStorage.setItem('isma.sede', sede.id); } catch (e) {}
+  store.set('sede', sede.id);
   renderDoctor();
+  if (sede.id === 'otro' && !OTRA.nombre) $('otraNombre').focus();
+});
+
+/* Datos del médico */
+const DOC_FIELDS = { docNombre: 'nombre', docRut: 'rut', docSpec: 'especialidad' };
+function saveDoctor() { store.set('medico', DOCTOR); renderDoctor(); }
+Object.entries(DOC_FIELDS).forEach(([id, k]) => {
+  $(id).addEventListener('input', () => { DOCTOR[k] = $(id).value.trim(); if (id === 'docRut') checkDocRut(); saveDoctor(); });
+});
+function checkDocRut() {
+  const v = $('docRut').value; const h = $('docRutHint'); const ok = rutValid(v);
+  if (ok === null) { h.textContent = ''; h.className = 'hint'; }
+  else if (ok) { h.textContent = 'RUT válido'; h.className = 'hint ok'; }
+  else { h.textContent = 'Dígito verificador no coincide'; h.className = 'hint bad'; }
+}
+$('docRut').addEventListener('blur', () => {
+  const v = $('docRut').value; if (rutClean(v).length >= 2) $('docRut').value = rutFormat(v);
+  DOCTOR.rut = $('docRut').value.trim(); checkDocRut(); saveDoctor();
+});
+
+/* Otro lugar de atención */
+$('otraNombre').addEventListener('input', () => {
+  OTRA.nombre = $('otraNombre').value.trim(); store.set('otraSede', OTRA); renderDoctor();
+});
+$('otraLogo').addEventListener('change', () => {
+  const f = $('otraLogo').files[0]; if (!f) return;
+  const img = new Image();
+  img.onload = () => {
+    // Se reduce el logo para que quepa en el almacenamiento del navegador.
+    const maxH = 160, maxW = 720;
+    const s = Math.min(1, maxH / img.height, maxW / img.width);
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    OTRA.logo = c.toDataURL('image/png');
+    URL.revokeObjectURL(img.src);
+    if (!store.set('otraSede', OTRA)) $('msg').textContent = 'El logo es demasiado grande para guardarse; se usará solo en esta sesión.';
+    $('otraLogo').value = '';
+    renderDoctor();
+  };
+  img.onerror = () => { $('msg').textContent = 'No se pudo leer la imagen del logo.'; };
+  img.src = URL.createObjectURL(f);
+});
+$('otraLogoDel').addEventListener('click', () => {
+  OTRA.logo = ''; store.set('otraSede', OTRA); renderDoctor();
 });
 
 window.addEventListener('resize', fitPage);
 
 /* ===================== Inicio ===================== */
 $('fecha').value = todayISO();
+Object.entries(DOC_FIELDS).forEach(([id, k]) => { $(id).value = DOCTOR[k]; });
+$('otraNombre').value = OTRA.nombre;
+checkDocRut();
+$('docBox').open = !DOCTOR.nombre;
 renderDoctor();
 renderSets();
 renderPreview();
