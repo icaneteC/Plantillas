@@ -181,8 +181,11 @@
 
     <fieldset>
       <legend>Médico tratante</legend>
-      <details class="doc" id="docBox">
-        <summary><span class="who" id="docWho"></span><span class="edit">Editar</span></summary>
+      <div class="seg wide" id="docSeg">
+        <button type="button" data-doc="base">Dr. Cañete</button>
+        <button type="button" data-doc="otro">Otro médico</button>
+      </div>
+      <div id="docBox" hidden>
         <label class="f" for="docNombre">Nombre como aparecerá impreso</label>
         <input type="text" id="docNombre" autocomplete="off" placeholder="ej. Dra. María Pérez Soto">
         <div class="row2">
@@ -197,7 +200,7 @@
           </div>
         </div>
         <div class="saved-note">Se guarda solo en este navegador; no se envía a ninguna parte.</div>
-      </details>
+      </div>
     </fieldset>
 
     <fieldset>
@@ -320,7 +323,15 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem('plantillas.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem('plantillas.' + k, JSON.stringify(v)); return true; } catch (e) { return false; } }
 };
-const DOCTOR = Object.assign({ nombre: '', rut: '', especialidad: '' }, store.get('medico', {}));
+// Médico por defecto (botón "Dr. Cañete"). "Otro médico" usa los datos ingresados en el formulario.
+const DOCTOR_BASE = {
+  nombre: 'Dr. Ismael Cañete Campos',
+  rut: '16.360.878-2',
+  especialidad: 'Ortopedia y Traumatología Infantil'
+};
+const OTRO_DOC = Object.assign({ nombre: '', rut: '', especialidad: '' }, store.get('medico', {}));
+let docMode = store.get('medicoModo', 'base') === 'otro' ? 'otro' : 'base';
+let DOCTOR = docMode === 'otro' ? OTRO_DOC : DOCTOR_BASE;
 const OTRA = Object.assign({ nombre: '', logo: '' }, store.get('otraSede', {}));
 
 // Lugares de atención: el seleccionado define el logo y la institución impresa.
@@ -576,9 +587,8 @@ function renderDoctor() {
   $('otraSede').hidden = sede.id !== 'otro';
   $('otraLogoPrev').src = OTRA.logo || '';
   $('otraLogoDel').hidden = !OTRA.logo;
-  const who = $('docWho');
-  who.textContent = DOCTOR.nombre || 'Ingrese sus datos';
-  who.classList.toggle('empty', !DOCTOR.nombre);
+  document.querySelectorAll('#docSeg button').forEach(b => b.classList.toggle('act', b.dataset.doc === docMode));
+  $('docBox').hidden = docMode !== 'otro';
 }
 
 /* ===================== Escala de la página en pantalla ===================== */
@@ -689,9 +699,17 @@ $('sedeSeg').addEventListener('click', ev => {
 
 /* Datos del médico */
 const DOC_FIELDS = { docNombre: 'nombre', docRut: 'rut', docSpec: 'especialidad' };
-function saveDoctor() { store.set('medico', DOCTOR); renderDoctor(); }
+function saveDoctor() { store.set('medico', OTRO_DOC); renderDoctor(); }
+$('docSeg').addEventListener('click', ev => {
+  const b = ev.target.closest('[data-doc]'); if (!b) return;
+  docMode = b.dataset.doc;
+  DOCTOR = docMode === 'otro' ? OTRO_DOC : DOCTOR_BASE;
+  store.set('medicoModo', docMode);
+  renderDoctor();
+  if (docMode === 'otro' && !OTRO_DOC.nombre) $('docNombre').focus();
+});
 Object.entries(DOC_FIELDS).forEach(([id, k]) => {
-  $(id).addEventListener('input', () => { DOCTOR[k] = $(id).value.trim(); if (id === 'docRut') checkDocRut(); saveDoctor(); });
+  $(id).addEventListener('input', () => { OTRO_DOC[k] = $(id).value.trim(); if (id === 'docRut') checkDocRut(); saveDoctor(); });
 });
 function checkDocRut() {
   const v = $('docRut').value; const h = $('docRutHint'); const ok = rutValid(v);
@@ -701,7 +719,7 @@ function checkDocRut() {
 }
 $('docRut').addEventListener('blur', () => {
   const v = $('docRut').value; if (rutClean(v).length >= 2) $('docRut').value = rutFormat(v);
-  DOCTOR.rut = $('docRut').value.trim(); checkDocRut(); saveDoctor();
+  OTRO_DOC.rut = $('docRut').value.trim(); checkDocRut(); saveDoctor();
 });
 
 /* Otro lugar de atención */
@@ -735,10 +753,9 @@ window.addEventListener('resize', fitPage);
 
 /* ===================== Inicio ===================== */
 $('fecha').value = todayISO();
-Object.entries(DOC_FIELDS).forEach(([id, k]) => { $(id).value = DOCTOR[k]; });
+Object.entries(DOC_FIELDS).forEach(([id, k]) => { $(id).value = OTRO_DOC[k]; });
 $('otraNombre').value = OTRA.nombre;
 checkDocRut();
-$('docBox').open = !DOCTOR.nombre;
 renderDoctor();
 renderSets();
 renderPreview();
