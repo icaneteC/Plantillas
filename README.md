@@ -2,7 +2,7 @@
 
 Herramientas clínicas para traumatología infantil.
 
-## plantillas.html
+## Plantillas ortopédicas (index.html)
 
 Indicación de plantillas ortopédicas con esquema dinámico.
 
@@ -17,7 +17,7 @@ No se guarda ni se envía ningún dato del paciente: todo ocurre en el navegador
 
 ### Configuración
 
-- **Médico tratante:** por defecto se imprimen los datos del Dr. Ismael Cañete Campos (objeto `DOCTOR_BASE` en `plantillas.html`). Con el botón "Otro médico" se ingresan nombre, RUT y especialidad; se guardan solo en ese navegador y se recuerda la elección.
+- **Médico tratante:** por defecto se imprimen los datos del Dr. Ismael Cañete Campos (objeto `DOCTOR_BASE` en `index.html`). Con el botón "Otro médico" se ingresan nombre, RUT y especialidad; se guardan solo en ese navegador y se recuerda la elección.
 - **Lugar de atención:** UC CHRISTUS, Hospital Sótero del Río u "Otro lugar", donde se escribe el nombre de la institución y opcionalmente se sube un logo. La elección también se recuerda en el navegador.
 - Firma: a mano sobre la línea, después de imprimir.
-- Elementos de la plantilla: arreglo `ELEMENTS` en `plantillas.html`.
+- Elementos de la plantilla: arreglo `ELEMENTS` en `index.html`.

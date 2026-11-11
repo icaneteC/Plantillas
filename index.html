@@ -1,0 +1,765 @@
+<!doctype html>
+<html lang="es-CL">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plantillas ortopédicas</title>
+<style>
+  :root {
+    --ink: #1a2230;
+    --muted: #5d6878;
+    --line: #d9dee6;
+    --bg: #eef1f5;
+    --panel: #ffffff;
+    --brand: #1d3557;
+    --brand-soft: #e7edf5;
+    --accent: #2f6db5;
+    --warn: #a4400f;
+    --ok: #2f7a3e;
+    --radius: 10px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  }
+  /* Tinte de pantalla según lugar de atención (no afecta la hoja impresa). */
+  :root[data-sede="uc"]     { --brand: #5b2a86; --brand-soft: #efe8f6; --bg: #ece6f3; --accent: #2a7bd4; --strip: linear-gradient(90deg, #2a7bd4, #5b2a86 55%, #a37cc9); }
+  :root[data-sede="sotero"] { --brand: #0f3380; --brand-soft: #e3f4f2; --bg: #e2f1f0; --accent: #1683d6; --strip: linear-gradient(90deg, #1683d6, #0f3380 55%, #00cdb4); }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { font-family: var(--font); color: var(--ink); background: var(--bg); font-size: 14px; }
+
+  /* ---------- App layout ---------- */
+  .app { display: grid; grid-template-columns: minmax(340px, 440px) 1fr; min-height: 100vh; }
+  aside.form { background: var(--panel); border-right: 1px solid var(--line); border-top: 6px solid transparent; border-image: var(--strip, none) 1; padding: 20px 20px 40px; overflow-y: auto; max-height: 100vh; position: sticky; top: 0; }
+  main.preview { padding: 16px 24px 40px; min-width: 0; }
+
+  .brand-bar { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
+  .brand-bar h1 { font-size: 18px; margin: 0; color: var(--brand); letter-spacing: .2px; }
+  .brand-bar span { font-size: 12px; font-weight: 600; color: var(--brand); text-align: right; }
+
+  fieldset { border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px 14px; margin: 0 0 14px; }
+  legend { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .6px; color: var(--brand); padding: 0 6px; }
+  label.f { display: block; font-size: 12px; color: var(--muted); margin: 8px 0 4px; }
+  input[type=text], input[type=date], input[type=number], textarea, select {
+    width: 100%; font: inherit; color: var(--ink); background: #fff;
+    border: 1px solid var(--line); border-radius: 7px; padding: 7px 9px;
+  }
+  input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+  textarea { resize: vertical; min-height: 56px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .hint { font-size: 11.5px; margin-top: 4px; min-height: 14px; }
+  .hint.ok { color: var(--ok); } .hint.bad { color: var(--warn); }
+
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #f6f8fb; }
+  .seg button { font: inherit; font-size: 12.5px; border: 0; background: transparent; padding: 6px 10px; cursor: pointer; color: var(--muted); }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button.act { background: var(--brand); color: #fff; }
+  .seg.wide { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+  .seg.wide button { padding: 8px 6px; }
+  .seg.wide button:nth-child(3) { border-left: 0; }
+  .seg.wide button:nth-child(n+3) { border-top: 1px solid var(--line); }
+  #sedeSeg button:nth-child(3):last-child { grid-column: 1 / -1; }
+
+  .set-block { border: 1px solid var(--line); border-radius: var(--radius); margin-top: 12px; overflow: hidden; }
+  .set-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--brand-soft); padding: 8px 12px; }
+  .set-head h3 { margin: 0; font-size: 13px; color: var(--brand); }
+  .set-body { padding: 6px 12px 10px; }
+  .largo { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed var(--line); font-size: 13px; }
+  .el-row { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; padding: 8px 0; border-bottom: 1px solid #eef1f5; align-items: center; }
+  .el-row:last-child { border-bottom: 0; }
+  .el-info { display: flex; gap: 9px; align-items: flex-start; }
+  .sw { width: 12px; height: 12px; border-radius: 3px; background: var(--c); flex: none; margin-top: 3px; opacity: .85; }
+  .el-name { font-size: 13px; font-weight: 500; }
+  .el-help { font-size: 11.5px; color: var(--muted); }
+  .el-extra { grid-column: 1 / -1; display: flex; gap: 8px; align-items: center; padding-left: 21px; }
+  .el-extra .mm { display: flex; align-items: center; gap: 6px; }
+  .el-extra input[type=number] { width: 88px; }
+  .el-extra select { width: auto; }
+  .el-extra .note { font-size: 12px; color: var(--muted); }
+  .el-row.on .el-name { color: var(--brand); font-weight: 600; }
+  .el-row.missing input[type=number] { border-color: var(--warn); }
+  details.doc > summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  details.doc > summary::-webkit-details-marker { display: none; }
+  details.doc > summary .who { font-size: 13px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  details.doc > summary .who.empty { color: var(--warn); }
+  details.doc > summary .edit { font-size: 12px; color: var(--accent); text-decoration: underline; flex: none; }
+  details.doc[open] > summary .edit { display: none; }
+  .saved-note { font-size: 11.5px; color: var(--muted); margin-top: 8px; }
+  #otraSede { margin-top: 10px; }
+  #otraSede[hidden] { display: none; }
+  .logo-row { display: flex; align-items: center; gap: 10px; margin-top: 4px; flex-wrap: wrap; }
+  .logo-row img { height: 34px; max-width: 140px; object-fit: contain; border: 1px solid var(--line); border-radius: 4px; padding: 2px; background: #fff; }
+  .logo-row img:not([src]), .logo-row img[src=""] { display: none; }
+  .linkbtn { font: inherit; font-size: 12px; border: 0; background: none; color: var(--accent); cursor: pointer; padding: 0; text-decoration: underline; }
+
+  .toolbar { display: flex; gap: 10px; align-items: center; justify-content: flex-end; margin-bottom: 14px; flex-wrap: wrap; }
+  .toolbar .msg { margin-right: auto; font-size: 12.5px; color: var(--muted); }
+  .btn { font: inherit; font-size: 13.5px; font-weight: 600; border-radius: 8px; padding: 9px 16px; cursor: pointer; border: 1px solid var(--brand); }
+  .btn.primary { background: var(--brand); color: #fff; }
+  .btn.ghost { background: #fff; color: var(--brand); }
+  .btn:hover { filter: brightness(1.08); }
+
+  .page-wrap { margin: 0 auto; position: relative; }
+  .page {
+    --brand: #1d3557;
+    width: 8.5in; height: 11in; background: #fff; color: #111;
+    padding: 0.5in 0.6in 0.45in; box-shadow: 0 4px 24px rgba(20, 30, 50, .14);
+    transform-origin: top left; position: absolute; top: 0; left: 0;
+    display: flex; flex-direction: column; overflow: hidden;
+    font-family: var(--font);
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+
+  /* ---------- Printed page ---------- */
+  .p-head { display: flex; justify-content: space-between; align-items: center; gap: 20px; border-bottom: 2px solid var(--brand); padding-bottom: 10px; }
+  .p-logo img { height: 0.62in; max-width: 2.8in; object-fit: contain; object-position: left center; display: block; }
+  .p-doc { text-align: right; }
+  .p-doc .n { font-size: 20px; font-weight: 700; color: var(--brand); letter-spacing: .2px; }
+  .p-doc .s { font-size: 12px; color: #333; margin-top: 2px; }
+  .p-titlebar { display: flex; justify-content: space-between; align-items: baseline; margin-top: 10px; }
+  .p-titlebar .t { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--brand); }
+  .p-titlebar .d { font-size: 12px; color: #333; }
+
+  .p-pac { display: grid; grid-template-columns: 2.6fr 1.3fr 1fr; gap: 0; border: 1px solid #9aa6b6; border-radius: 6px; margin-top: 14px; }
+  .p-pac > div { padding: 6px 10px; border-left: 1px solid #c9d1dc; min-width: 0; }
+  .p-pac > div:first-child { border-left: 0; }
+  .p-pac .k { font-size: 9.5px; text-transform: uppercase; letter-spacing: .7px; color: #5d6878; }
+  .p-pac .v { font-size: 14px; font-weight: 600; min-height: 18px; overflow-wrap: anywhere; }
+  .p-dg { margin-top: 10px; font-size: 13px; min-height: 19px; }
+  .p-dg b { color: var(--brand); }
+
+  /* Cuerpo en dos columnas: indicación a la izquierda, esquema a la derecha (tamaño fijo). */
+  .p-body { display: grid; grid-template-columns: 36% 1fr; gap: 0 22px; flex: 1; min-height: 0; margin-top: 10px; border-top: 1px solid #e3e7ed; padding-top: 12px; }
+  .p-rp { font-size: 13px; line-height: 1.45; overflow: hidden; }
+  .p-rp .rp { font-weight: 700; color: var(--brand); font-size: 15px; margin-right: 6px; }
+  .p-rp ul { margin: 4px 0 0; padding-left: 22px; }
+    .p-rp li { break-inside: avoid; }
+  .p-rp .cols { margin-top: 4px; }
+  .p-rp .cols h4 { margin: 12px 0 0; font-size: 12.5px; color: var(--brand); }
+  .p-rp .cols ul { padding-left: 18px; margin-top: 2px; }
+  .p-rp .none { color: #555; font-style: italic; }
+  .p-rp .pend { color: var(--warn); font-weight: 600; }
+
+  .p-draw { height: 100%; min-height: 0; display: flex; flex-direction: column; }
+  .feet { flex: 1; min-height: 0; display: flex; justify-content: center; gap: 2%; }
+  .foot { width: 49%; height: 100%; display: flex; flex-direction: column; align-items: center; min-height: 0; }
+  .foot .ft { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; color: var(--brand); text-transform: uppercase; margin-bottom: 4px; }
+  .foot svg { flex: 1; min-height: 0; width: 100%; display: block; }
+  .orient { text-align: center; font-size: 9.5px; color: #777; margin-top: 2px; }
+
+  .p-obs { margin-top: 8px; font-size: 12.5px; white-space: pre-wrap; flex: none; height: 0.85in; overflow: hidden; }
+  .p-obs b { color: var(--brand); }
+
+  .p-foot { display: flex; justify-content: flex-end; margin-top: 10px; }
+  .sig { width: 2.9in; text-align: center; font-size: 11.5px; line-height: 1.35; }
+  .sig .img { height: 0.7in; }
+  .sig .ln { border-top: 1px solid #222; margin: 2px 0 4px; }
+  .sig .n { font-weight: 700; font-size: 12.5px; }
+
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr; }
+    aside.form { position: static; max-height: none; border-right: 0; border-bottom: 1px solid var(--line); padding: 16px; }
+    main.preview { padding: 16px; }
+  }
+
+  @page { size: letter; margin: 0; }
+  @media print {
+    html, body { background: #fff; }
+    aside.form, .toolbar { display: none !important; }
+    .app { display: block; }
+    main.preview { padding: 0; }
+    .page-wrap { width: auto !important; height: auto !important; margin: 0; }
+    .page { position: static; transform: none !important; box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="form" id="form">
+    <div class="brand-bar">
+      <h1>Indicación de plantillas</h1>
+      <span id="sedeNow"></span>
+    </div>
+
+    <fieldset>
+      <legend>Médico tratante</legend>
+      <div class="seg wide" id="docSeg">
+        <button type="button" data-doc="base">Dr. Cañete</button>
+        <button type="button" data-doc="otro">Otro médico</button>
+      </div>
+      <div id="docBox" hidden>
+        <label class="f" for="docNombre">Nombre como aparecerá impreso</label>
+        <input type="text" id="docNombre" autocomplete="off" placeholder="ej. Dra. María Pérez Soto">
+        <div class="row2">
+          <div>
+            <label class="f" for="docRut">RUT</label>
+            <input type="text" id="docRut" autocomplete="off" placeholder="12.345.678-9">
+            <div class="hint" id="docRutHint"></div>
+          </div>
+          <div>
+            <label class="f" for="docSpec">Especialidad</label>
+            <input type="text" id="docSpec" autocomplete="off" placeholder="ej. Traumatología Infantil">
+          </div>
+        </div>
+        <div class="saved-note">Se guarda solo en este navegador; no se envía a ninguna parte.</div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Lugar de atención</legend>
+      <div class="seg wide" id="sedeSeg"></div>
+      <div id="otraSede" hidden>
+        <label class="f" for="otraNombre">Nombre de la institución</label>
+        <input type="text" id="otraNombre" autocomplete="off" placeholder="ej. Clínica Las Condes">
+        <label class="f" for="otraLogo">Logo (opcional)</label>
+        <div class="logo-row">
+          <img id="otraLogoPrev" alt="">
+          <input type="file" id="otraLogo" accept="image/*">
+          <button type="button" class="linkbtn" id="otraLogoDel" hidden>Quitar logo</button>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Paciente</legend>
+      <label class="f" for="nombre">Nombre completo</label>
+      <input type="text" id="nombre" autocomplete="off">
+      <div class="row2">
+        <div>
+          <label class="f" for="rut">RUT</label>
+          <input type="text" id="rut" autocomplete="off" placeholder="12.345.678-9">
+          <div class="hint" id="rutHint"></div>
+        </div>
+        <div>
+          <label class="f" for="edad">Edad</label>
+          <input type="text" id="edad" autocomplete="off" placeholder="ej. 8 años">
+        </div>
+      </div>
+      <label class="f" for="dg">Diagnóstico</label>
+      <input type="text" id="dg" maxlength="110" autocomplete="off" placeholder="ej. Pie plano flexible bilateral">
+      <div class="row2">
+        <div>
+          <label class="f" for="fecha">Fecha</label>
+          <input type="date" id="fecha">
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Plantillas</legend>
+      <label class="f">Lateralidad</label>
+      <div class="seg wide" id="modeSeg">
+        <button type="button" data-mode="bilateral">Bilateral (igual)</button>
+        <button type="button" data-mode="distinto">Ambos, distinto</button>
+        <button type="button" data-mode="derecho">Solo pie derecho</button>
+        <button type="button" data-mode="izquierdo">Solo pie izquierdo</button>
+      </div>
+      <div id="sets"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Observaciones</legend>
+      <textarea id="obs" maxlength="350" placeholder="Material, indicaciones al ortesista, control, etc."></textarea>
+    </fieldset>
+  </aside>
+
+  <main class="preview">
+    <div class="toolbar">
+      <div class="msg" id="msg">La vista previa se actualiza en tiempo real.</div>
+      <button type="button" class="btn ghost" id="btnClear">Limpiar y comenzar de nuevo</button>
+      <button type="button" class="btn primary" id="btnPrint">Generar PDF / Imprimir</button>
+    </div>
+    <div class="page-wrap" id="pageWrap">
+      <div class="page" id="page">
+        <header class="p-head">
+          <div class="p-logo"><img id="pLogo" alt=""></div>
+          <div class="p-doc">
+            <div class="n" id="pDocName"></div>
+            <div class="s" id="pDocSpec"></div>
+          </div>
+        </header>
+        <div class="p-titlebar">
+          <div class="t">Indicación de plantillas ortopédicas</div>
+          <div class="d" id="pFechaTop"></div>
+        </div>
+
+        <section class="p-pac">
+          <div><div class="k">Paciente</div><div class="v" id="pNombre"></div></div>
+          <div><div class="k">RUT</div><div class="v" id="pRut"></div></div>
+          <div><div class="k">Edad</div><div class="v" id="pEdad"></div></div>
+        </section>
+
+        <div class="p-dg" id="pDg"></div>
+        <div class="p-body">
+        <section class="p-rp" id="pRp"></section>
+
+        <section class="p-draw">
+          <div class="feet" id="pFeet"></div>
+          <div class="orient">Esquema en vista superior de la plantilla. Medidas en milímetros.</div>
+        </section>
+        </div>
+
+        <div class="p-obs" id="pObs"></div>
+
+        <footer class="p-foot">
+          <div class="sig">
+            <div class="img"></div>
+            <div class="ln"></div>
+            <div class="n" id="pSigName"></div>
+            <div id="pSigRut"></div>
+            <div id="pSigSpec"></div>
+            <div id="pSigInst"></div>
+            <div id="pSigFecha"></div>
+          </div>
+        </footer>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+/* ===================== Médico y lugar de atención =====================
+   Cada usuario ingresa sus datos en el formulario; se guardan solo en su
+   navegador (localStorage). La firma se realiza a mano después de imprimir. */
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('plantillas.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('plantillas.' + k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+};
+// Médico por defecto (botón "Dr. Cañete"). "Otro médico" usa los datos ingresados en el formulario.
+const DOCTOR_BASE = {
+  nombre: 'Dr. Ismael Cañete Campos',
+  rut: '16.360.878-2',
+  especialidad: 'Ortopedia y Traumatología Infantil'
+};
+const OTRO_DOC = Object.assign({ nombre: '', rut: '', especialidad: '' }, store.get('medico', {}));
+let docMode = store.get('medicoModo', 'base') === 'otro' ? 'otro' : 'base';
+let DOCTOR = docMode === 'otro' ? OTRO_DOC : DOCTOR_BASE;
+const OTRA = Object.assign({ nombre: '', logo: '' }, store.get('otraSede', {}));
+
+// Lugares de atención: el seleccionado define el logo y la institución impresa.
+const SEDES = [
+  { id: 'uc',     corto: 'UC CHRISTUS',             nombre: 'Red de Salud UC CHRISTUS',    logo: 'logos/uc-christus.png' },
+  { id: 'sotero', corto: 'Hospital Sótero del Río', nombre: 'Hospital Dr. Sótero del Río', logo: 'logos/sotero.png' },
+  { id: 'otro',   corto: 'Otro lugar',              get nombre() { return OTRA.nombre; }, get logo() { return OTRA.logo; } }
+];
+SEDES.forEach(s => { if (s.logo) { const i = new Image(); i.src = s.logo; } });   // precarga
+let sede = SEDES.find(s => s.id === store.get('sede')) || SEDES[0];
+
+/* ===================== Elementos de la plantilla ===================== */
+const ELEMENTS = [
+  { id: 'pm', nombre: 'Realce posteromedial',     ayuda: 'Cuña medial de talón',                                  mm: true,  color: '#1f56c4' },
+  { id: 'pl', nombre: 'Realce posterolateral',    ayuda: 'Cuña desde la base del 5° metatarsiano (tipo Coleman)', mm: true,  color: '#c2410c' },
+  { id: 'am', nombre: 'Arco longitudinal medial', ayuda: 'Soporte del arco',                          mm: true,  color: '#15803d' },
+  { id: 'br', nombre: 'Barra retrocapital',       ayuda: 'Por detrás de las cabezas metatarsales',    mm: true,  color: '#7e22ce' },
+  { id: 'om', nombre: 'Botón retrocapital',       ayuda: 'Central, por detrás de las cabezas metatarsales',                mm: true,  color: '#be123c' },
+  { id: 'ca', nombre: 'Cuña de antepié',          ayuda: 'Medial o lateral',                          mm: true,  color: '#0e7490', lado: true },
+  { id: 'at', nombre: 'Alza de talón',            ayuda: 'Discrepancia de longitud de extremidades',  mm: true,  color: '#374151' }
+
+];
+const EL = Object.fromEntries(ELEMENTS.map(e => [e.id, e]));
+
+/* ===================== Estado ===================== */
+function newSet() {
+  const el = {};
+  ELEMENTS.forEach(e => { el[e.id] = { on: false, mm: '' }; if (e.lado) el[e.id].lado = 'medial'; });
+  return { el };
+}
+function clone(o) { return JSON.parse(JSON.stringify(o)); }
+function isPristine(s) { return JSON.stringify(s) === JSON.stringify(newSet()); }
+
+let state;
+function resetState() {
+  state = { mode: 'bilateral', sets: { B: newSet(), R: newSet(), L: newSet() } };
+}
+resetState();
+
+const MODE_FORM = {
+  bilateral: [['B', 'Ambos pies']],
+  distinto:  [['R', 'Pie derecho'], ['L', 'Pie izquierdo']],
+  derecho:   [['R', 'Pie derecho']],
+  izquierdo: [['L', 'Pie izquierdo']]
+};
+// Orden de dibujo: izquierdo a la izquierda, derecho a la derecha (vista superior).
+const MODE_DRAW = {
+  bilateral: [['L', 'B'], ['R', 'B']],
+  distinto:  [['L', 'L'], ['R', 'R']],
+  derecho:   [['R', 'R']],
+  izquierdo: [['L', 'L']]
+};
+
+/* ===================== Utilidades ===================== */
+const $ = id => document.getElementById(id);
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function fmtMM(v) { return v === '' || v == null ? null : String(v).replace('.', ','); }
+function todayISO() { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); }
+function fmtDate(iso) { if (!iso) return ''; const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; }
+
+function rutClean(r) { return String(r).replace(/[^0-9kK]/g, '').toUpperCase(); }
+function rutDV(num) {
+  let s = 0, m = 2;
+  for (let i = num.length - 1; i >= 0; i--) { s += parseInt(num[i], 10) * m; m = m === 7 ? 2 : m + 1; }
+  const r = 11 - (s % 11);
+  return r === 11 ? '0' : r === 10 ? 'K' : String(r);
+}
+function rutFormat(r) {
+  const c = rutClean(r);
+  if (c.length < 2) return r.trim();
+  const body = c.slice(0, -1), dv = c.slice(-1);
+  return body.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '-' + dv;
+}
+function rutValid(r) {
+  const c = rutClean(r);
+  if (c.length < 2) return null;
+  const body = c.slice(0, -1);
+  if (!/^\d+$/.test(body)) return false;
+  return rutDV(body) === c.slice(-1);
+}
+
+/* ===================== Formulario de elementos ===================== */
+function renderSets() {
+  document.querySelectorAll('#modeSeg button').forEach(b => b.classList.toggle('act', b.dataset.mode === state.mode));
+  const html = MODE_FORM[state.mode].map(([key, titulo]) => {
+    const s = state.sets[key];
+    const copy = (state.mode === 'distinto' && key === 'L')
+      ? `<button type="button" class="linkbtn" data-copy="R-L">Copiar desde pie derecho</button>` : '';
+    const rows = ELEMENTS.map(e => {
+      const v = s.el[e.id];
+      const missing = v.on && e.mm && v.mm === '';
+      let extra = '';
+      if (v.on) {
+        const lado = e.lado ? `<select data-set="${key}" data-el="${e.id}" data-f="lado">
+            <option value="medial"${v.lado === 'medial' ? ' selected' : ''}>Medial</option>
+            <option value="lateral"${v.lado === 'lateral' ? ' selected' : ''}>Lateral</option></select>` : '';
+        const mm = e.mm
+          ? `<label class="mm"><input type="number" inputmode="decimal" min="0.5" max="40" step="0.5" placeholder="mm" data-set="${key}" data-el="${e.id}" data-f="mm" value="${esc(v.mm)}"><span>mm</span></label>`
+          : `<span class="note">Sin medida</span>`;
+        extra = `<div class="el-extra">${lado}${mm}</div>`;
+      }
+      return `<div class="el-row${v.on ? ' on' : ''}${missing ? ' missing' : ''}">
+        <div class="el-info"><span class="sw" style="--c:${e.color}"></span>
+          <div><div class="el-name">${e.nombre}</div><div class="el-help">${e.ayuda}</div></div></div>
+        <div class="seg">
+          <button type="button" class="${v.on ? '' : 'act'}" data-set="${key}" data-el="${e.id}" data-on="0">No</button>
+          <button type="button" class="${v.on ? 'act' : ''}" data-set="${key}" data-el="${e.id}" data-on="1">Sí</button>
+        </div>
+        ${extra}
+      </div>`;
+    }).join('');
+    return `<div class="set-block">
+      <div class="set-head"><h3>${titulo}</h3>${copy}</div>
+      <div class="set-body">
+        ${rows}
+      </div>
+    </div>`;
+  }).join('');
+  $('sets').innerHTML = html;
+}
+
+/* ===================== Dibujo de la plantilla (SVG) ===================== */
+// Contorno base de un pie DERECHO en vista superior (medial a la izquierda, ortejos arriba).
+const OUTLINE = 'M72 314 C92 314 106 301 107 281 C109 240 115 200 120 163 C124 135 130 112 129 88 C127 44 101 8 66 8 C31 8 11 40 11 80 C11 104 17 122 27 142 C39 168 44 200 40 236 C38 262 37 278 39 291 C43 306 56 314 72 314 Z';
+
+function footSVG(side, set) {
+  const sfx = side + Math.random().toString(36).slice(2, 7);
+  const L = side === 'L';
+  const X = x => L ? 140 - x : x;           // posición de etiquetas (no se reflejan)
+  const flip = L ? 'translate(140,0) scale(-1,1)' : '';
+  const el = set.el;
+  const on = id => el[id].on;
+  const mmTxt = id => { const v = fmtMM(el[id].mm); return v ? `${v} mm` : '? mm'; };
+
+  const defs = `
+    <clipPath id="clip${sfx}"><path d="${OUTLINE}"/></clipPath>
+    <linearGradient id="gpm${sfx}" x1="0" x2="1"><stop offset="0" stop-color="${EL.pm.color}" stop-opacity=".6"/><stop offset="1" stop-color="${EL.pm.color}" stop-opacity=".1"/></linearGradient>
+    <linearGradient id="gpl${sfx}" x1="0" x2="1"><stop offset="0" stop-color="${EL.pl.color}" stop-opacity=".1"/><stop offset="1" stop-color="${EL.pl.color}" stop-opacity=".6"/></linearGradient>
+    <linearGradient id="gcam${sfx}" x1="0" x2="1"><stop offset="0" stop-color="${EL.ca.color}" stop-opacity=".6"/><stop offset="1" stop-color="${EL.ca.color}" stop-opacity=".1"/></linearGradient>
+    <linearGradient id="gcal${sfx}" x1="0" x2="1"><stop offset="0" stop-color="${EL.ca.color}" stop-opacity=".1"/><stop offset="1" stop-color="${EL.ca.color}" stop-opacity=".6"/></linearGradient>
+    <pattern id="hat${sfx}" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="${EL.at.color}" stroke-width="1.4" stroke-opacity=".55"/></pattern>
+`;
+
+  let shapes = '';
+  if (on('ca')) shapes += el.ca.lado === 'medial'
+    ? `<rect x="0" y="0" width="66" height="99" fill="url(#gcam${sfx})"/>`
+    : `<rect x="66" y="0" width="74" height="99" fill="url(#gcal${sfx})"/>`;
+  if (on('am')) shapes += `<ellipse cx="30" cy="190" rx="28" ry="62" fill="${EL.am.color}" fill-opacity=".38"/>`;
+  // Realce posteromedial: cuña desde el borde medial (inicio del talón) en diagonal hasta el borde posterior del talón.
+  if (on('pm')) shapes += `<polygon points="-10,226 41,226 113,332 -10,332" fill="url(#gpm${sfx})" stroke="${EL.pm.color}" stroke-width=".8" stroke-opacity=".7"/>`;
+  // Realce posterolateral tipo Coleman: triángulo desde la base del 5° metatarsiano hacia el talón.
+  if (on('pl')) shapes += `<polygon points="123,158 152,340 36,340" fill="url(#gpl${sfx})" stroke="${EL.pl.color}" stroke-width=".8" stroke-opacity=".7"/>`;
+  if (on('at')) shapes += `<rect x="0" y="240" width="140" height="90" fill="url(#hat${sfx})"/>`;
+  if (on('br')) shapes += `<rect x="0" y="99" width="140" height="26" fill="${EL.br.color}" fill-opacity=".38"/>`;
+  if (on('om')) shapes += `<path d="M63 99 C74 99 76 113 72 123 C69 131 66 135 63 137 C60 135 57 131 54 123 C50 113 52 99 63 99 Z" fill="${EL.om.color}" fill-opacity=".45" stroke="${EL.om.color}" stroke-width=".8"/>`;
+
+  // Etiquetas
+  const lab = (x, y, t, c) => `<text x="${X(x)}" y="${y}" fill="${c}" font-size="9.5" font-weight="700" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke" stroke-linejoin="round">${t}</text>`;
+  let labels = '';
+  if (on('ca')) labels += lab(el.ca.lado === 'medial' ? 34 : 104, 66, mmTxt('ca'), EL.ca.color);
+  if (on('br')) labels += lab(104, 115, mmTxt('br'), EL.br.color);
+  if (on('om')) labels += lab(63, 151, mmTxt('om'), EL.om.color);
+  if (on('am')) labels += lab(30, 198, mmTxt('am'), EL.am.color);
+  if (on('pm')) labels += lab(63, 298, mmTxt('pm'), EL.pm.color);
+  if (on('pl')) labels += lab(92, 270, mmTxt('pl'), EL.pl.color);
+  if (on('at')) labels += lab(70, 333, 'Alza ' + mmTxt('at'), EL.at.color);
+
+  return `<svg viewBox="-8 -6 156 346" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Plantilla ${L ? 'izquierda' : 'derecha'}">
+    <defs>${defs}</defs>
+    <g transform="${flip}">
+      <path d="${OUTLINE}" fill="#fff"/>
+      <g clip-path="url(#clip${sfx})">${shapes}</g>
+      <path d="${OUTLINE}" fill="none" stroke="#111" stroke-width="1.6" stroke-linejoin="round"/>
+    </g>
+    ${labels}
+  </svg>`;
+}
+
+/* ===================== Texto de la indicación ===================== */
+function phrase(id, v) {
+  const e = EL[id];
+  const mm = fmtMM(v.mm);
+  const m = mm ? `${mm} mm` : '<span class="pend">__ mm</span>';
+  switch (id) {
+    case 'ca': return `Cuña de antepié ${v.lado} de ${m}`;
+    default:   return `${e.nombre} de ${m}`;
+  }
+}
+function setItems(s, two) {
+  const items = ELEMENTS.filter(e => s.el[e.id].on).map(e => `<li>${phrase(e.id, s.el[e.id])}</li>`);
+  return items.length ? `<ul${two ? ' class="two"' : ''}>${items.join('')}</ul>` : `<ul><li class="none">Sin elementos de corrección adicionales</li></ul>`;
+}
+const largoTxt = () => 'largo completo';
+
+function rpHTML() {
+  const S = state.sets;
+  switch (state.mode) {
+    case 'bilateral':
+      return `<span class="rp">Rp.</span>Plantillas ortopédicas bilaterales, ${largoTxt(S.B)}, con:${setItems(S.B, true)}`;
+    case 'derecho':
+      return `<span class="rp">Rp.</span>Plantilla ortopédica pie derecho, ${largoTxt(S.R)}, con:${setItems(S.R, true)}`;
+    case 'izquierdo':
+      return `<span class="rp">Rp.</span>Plantilla ortopédica pie izquierdo, ${largoTxt(S.L)}, con:${setItems(S.L, true)}`;
+    case 'distinto':
+      return `<span class="rp">Rp.</span>Plantillas ortopédicas bilaterales, largo completo, con indicación distinta para cada pie:
+        <div class="cols">
+          <div><h4>Pie izquierdo</h4>${setItems(S.L)}</div>
+          <div><h4>Pie derecho</h4>${setItems(S.R)}</div>
+        </div>`;
+  }
+}
+
+/* ===================== Vista previa ===================== */
+function renderPreview() {
+  const nombre = $('nombre').value.trim();
+  const rut = $('rut').value.trim();
+  const fecha = fmtDate($('fecha').value);
+
+  $('pNombre').textContent = nombre;
+  $('pRut').textContent = rut;
+  $('pEdad').textContent = $('edad').value.trim();
+  $('pFechaTop').textContent = fecha ? 'Fecha: ' + fecha : '';
+  $('pSigFecha').textContent = fecha;
+
+  const dg = $('dg').value.trim();
+  $('pDg').innerHTML = dg ? `<b>Dg:</b> ${esc(dg)}` : '';
+
+  $('pRp').innerHTML = rpHTML();
+
+  const draw = MODE_DRAW[state.mode];
+  $('pFeet').innerHTML = draw.map(([side, key]) =>
+    `<div class="foot"><div class="ft">Pie ${side === 'L' ? 'izquierdo' : 'derecho'}</div>${footSVG(side, state.sets[key])}</div>`
+  ).join('');
+
+  const obs = $('obs').value.trim();
+  $('pObs').innerHTML = obs ? `<b>Observaciones:</b> ${esc(obs)}` : '';
+}
+
+function renderDoctor() {
+  $('pDocName').textContent = DOCTOR.nombre;
+  $('pDocSpec').textContent = DOCTOR.especialidad;
+  $('pSigName').textContent = DOCTOR.nombre;
+  $('pSigRut').textContent = DOCTOR.rut ? 'RUT ' + DOCTOR.rut : '';
+  $('pSigSpec').textContent = DOCTOR.especialidad;
+  $('pSigInst').textContent = sede.nombre;
+  if (sede.logo) { $('pLogo').src = sede.logo; $('pLogo').style.display = ''; }
+  else { $('pLogo').removeAttribute('src'); $('pLogo').style.display = 'none'; }
+  $('pLogo').alt = sede.nombre;
+  $('sedeSeg').innerHTML = SEDES.map(s =>
+    `<button type="button" data-sede="${s.id}" class="${s.id === sede.id ? 'act' : ''}">${esc(s.corto)}</button>`).join('');
+  $('sedeNow').textContent = sede.nombre;
+  document.documentElement.dataset.sede = sede.id;
+  $('otraSede').hidden = sede.id !== 'otro';
+  $('otraLogoPrev').src = OTRA.logo || '';
+  $('otraLogoDel').hidden = !OTRA.logo;
+  document.querySelectorAll('#docSeg button').forEach(b => b.classList.toggle('act', b.dataset.doc === docMode));
+  $('docBox').hidden = docMode !== 'otro';
+}
+
+/* ===================== Escala de la página en pantalla ===================== */
+function fitPage() {
+  const wrap = $('pageWrap'), page = $('page');
+  const avail = wrap.parentElement.clientWidth;
+  const W = page.offsetWidth, H = page.offsetHeight;
+  const s = Math.min(1, avail / W);
+  page.style.transform = `scale(${s})`;
+  wrap.style.width = (W * s) + 'px';
+  wrap.style.height = (H * s) + 'px';
+}
+
+/* ===================== Eventos ===================== */
+$('modeSeg').addEventListener('click', ev => {
+  const b = ev.target.closest('[data-mode]'); if (!b) return;
+  const prev = state.mode, next = b.dataset.mode;
+  if (prev === next) return;
+  // Traspasar lo ya indicado al nuevo modo si los campos de destino están vacíos.
+  const src = state.sets[MODE_FORM[prev][0][0]];
+  MODE_FORM[next].forEach(([key]) => {
+    if (state.sets[key] !== src && isPristine(state.sets[key])) state.sets[key] = clone(src);
+  });
+  state.mode = next;
+  renderSets(); renderPreview();
+});
+
+$('sets').addEventListener('click', ev => {
+  const t = ev.target;
+  if (t.dataset.copy === 'R-L') { state.sets.L = clone(state.sets.R); renderSets(); renderPreview(); return; }
+  const key = t.dataset.set; if (!key) return;
+  if (t.dataset.on != null) {
+    const v = state.sets[key].el[t.dataset.el];
+    v.on = t.dataset.on === '1';
+    renderSets(); renderPreview();
+    if (v.on) {
+      const inp = document.querySelector(`#sets input[data-set="${key}"][data-el="${t.dataset.el}"]`);
+      if (inp) inp.focus();
+    }
+  }
+});
+
+$('sets').addEventListener('input', ev => {
+  const t = ev.target; const key = t.dataset.set; if (!key || !t.dataset.f) return;
+  state.sets[key].el[t.dataset.el][t.dataset.f] = t.value;
+  t.closest('.el-row').classList.toggle('missing', t.dataset.f === 'mm' && t.value === '');
+  renderPreview();
+});
+$('sets').addEventListener('change', ev => {
+  const t = ev.target; const key = t.dataset.set; if (!key || t.dataset.f !== 'lado') return;
+  state.sets[key].el[t.dataset.el].lado = t.value; renderPreview();
+});
+
+['nombre', 'edad', 'dg', 'obs', 'fecha'].forEach(id => $(id).addEventListener('input', renderPreview));
+
+function checkRut() {
+  const v = $('rut').value; const h = $('rutHint'); const ok = rutValid(v);
+  if (ok === null) { h.textContent = ''; h.className = 'hint'; }
+  else if (ok) { h.textContent = 'RUT válido'; h.className = 'hint ok'; }
+  else { h.textContent = 'Dígito verificador no coincide'; h.className = 'hint bad'; }
+}
+$('rut').addEventListener('input', () => { checkRut(); renderPreview(); });
+$('rut').addEventListener('blur', () => { const v = $('rut').value; if (rutClean(v).length >= 2) $('rut').value = rutFormat(v); checkRut(); renderPreview(); });
+
+function pendingIssues() {
+  const issues = [];
+  if (!DOCTOR.nombre) issues.push('Faltan los datos del médico tratante.');
+  if (!sede.nombre) issues.push('Falta el nombre del lugar de atención.');
+  if (!$('nombre').value.trim()) issues.push('Falta el nombre del paciente.');
+  if (!$('rut').value.trim()) issues.push('Falta el RUT del paciente.');
+  else if (rutValid($('rut').value) === false) issues.push('El RUT del paciente no es válido.');
+  MODE_FORM[state.mode].forEach(([key, titulo]) => {
+    ELEMENTS.forEach(e => {
+      const v = state.sets[key].el[e.id];
+      if (v.on && e.mm && v.mm === '') issues.push(`${titulo}: falta la medida de ${e.nombre.toLowerCase()}.`);
+    });
+  });
+  return issues;
+}
+
+$('btnPrint').addEventListener('click', () => {
+  const issues = pendingIssues();
+  if (issues.length && !confirm('Revise antes de imprimir:\n\n- ' + issues.join('\n- ') + '\n\n¿Desea continuar de todas formas?')) return;
+  const prevTitle = document.title;
+  const n = $('nombre').value.trim();
+  document.title = ['Plantillas', n, $('fecha').value].filter(Boolean).join(' - ');
+  window.print();
+  setTimeout(() => { document.title = prevTitle; }, 500);
+});
+
+$('btnClear').addEventListener('click', () => {
+  if (!confirm('Se borrarán todos los datos del paciente y de la plantilla. ¿Desea continuar?')) return;
+  ['nombre', 'rut', 'edad', 'dg', 'obs'].forEach(id => { $(id).value = ''; });
+  $('fecha').value = todayISO();
+  checkRut();
+  resetState();
+  renderSets(); renderPreview();
+  $('nombre').focus();
+});
+
+$('sedeSeg').addEventListener('click', ev => {
+  const b = ev.target.closest('[data-sede]'); if (!b) return;
+  sede = SEDES.find(s => s.id === b.dataset.sede) || SEDES[0];
+  store.set('sede', sede.id);
+  renderDoctor();
+  if (sede.id === 'otro' && !OTRA.nombre) $('otraNombre').focus();
+});
+
+/* Datos del médico */
+const DOC_FIELDS = { docNombre: 'nombre', docRut: 'rut', docSpec: 'especialidad' };
+function saveDoctor() { store.set('medico', OTRO_DOC); renderDoctor(); }
+$('docSeg').addEventListener('click', ev => {
+  const b = ev.target.closest('[data-doc]'); if (!b) return;
+  docMode = b.dataset.doc;
+  DOCTOR = docMode === 'otro' ? OTRO_DOC : DOCTOR_BASE;
+  store.set('medicoModo', docMode);
+  renderDoctor();
+  if (docMode === 'otro' && !OTRO_DOC.nombre) $('docNombre').focus();
+});
+Object.entries(DOC_FIELDS).forEach(([id, k]) => {
+  $(id).addEventListener('input', () => { OTRO_DOC[k] = $(id).value.trim(); if (id === 'docRut') checkDocRut(); saveDoctor(); });
+});
+function checkDocRut() {
+  const v = $('docRut').value; const h = $('docRutHint'); const ok = rutValid(v);
+  if (ok === null) { h.textContent = ''; h.className = 'hint'; }
+  else if (ok) { h.textContent = 'RUT válido'; h.className = 'hint ok'; }
+  else { h.textContent = 'Dígito verificador no coincide'; h.className = 'hint bad'; }
+}
+$('docRut').addEventListener('blur', () => {
+  const v = $('docRut').value; if (rutClean(v).length >= 2) $('docRut').value = rutFormat(v);
+  OTRO_DOC.rut = $('docRut').value.trim(); checkDocRut(); saveDoctor();
+});
+
+/* Otro lugar de atención */
+$('otraNombre').addEventListener('input', () => {
+  OTRA.nombre = $('otraNombre').value.trim(); store.set('otraSede', OTRA); renderDoctor();
+});
+$('otraLogo').addEventListener('change', () => {
+  const f = $('otraLogo').files[0]; if (!f) return;
+  const img = new Image();
+  img.onload = () => {
+    // Se reduce el logo para que quepa en el almacenamiento del navegador.
+    const maxH = 160, maxW = 720;
+    const s = Math.min(1, maxH / img.height, maxW / img.width);
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    OTRA.logo = c.toDataURL('image/png');
+    URL.revokeObjectURL(img.src);
+    if (!store.set('otraSede', OTRA)) $('msg').textContent = 'El logo es demasiado grande para guardarse; se usará solo en esta sesión.';
+    $('otraLogo').value = '';
+    renderDoctor();
+  };
+  img.onerror = () => { $('msg').textContent = 'No se pudo leer la imagen del logo.'; };
+  img.src = URL.createObjectURL(f);
+});
+$('otraLogoDel').addEventListener('click', () => {
+  OTRA.logo = ''; store.set('otraSede', OTRA); renderDoctor();
+});
+
+window.addEventListener('resize', fitPage);
+
+/* ===================== Inicio ===================== */
+$('fecha').value = todayISO();
+Object.entries(DOC_FIELDS).forEach(([id, k]) => { $(id).value = OTRO_DOC[k]; });
+$('otraNombre').value = OTRA.nombre;
+checkDocRut();
+renderDoctor();
+renderSets();
+renderPreview();
+fitPage();
+</script>
+</body>
+</html>
